@@ -1,0 +1,115 @@
+trigger:
+- develop
+
+
+
+jobs:
+- job: Build
+  pool:
+    vmImage: 'ubuntu-latest'
+
+
+  steps:
+  - task: Maven@4
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '21'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/TEST-*.xml'
+      goals: '--settings settings.xml --global-settings settings.xml package'
+
+
+  - task: Docker@2
+    displayName: Login to ACR
+    inputs:
+      command: login
+      containerRegistry: HubApp
+
+  - script: |
+      echo Starting the build action
+      ls target/
+      cp target/broker-0.0.1-SNAPSHOT.jar docker/dev
+    displayName: 'Build with Maven'
+
+
+  - task: Docker@2
+    displayName: Build and Push
+    inputs:
+      command: buildAndPush
+      dockerfile: docker/dev/Dockerfile
+      repository: brocker-be # username/contosoRepository for DockerHub
+      tags: |
+        $(Build.SourceBranchName)-$(Build.BuildId)
+
+
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'drop'
+      publishLocation: 'HubApp'
+
+
+
+  - task: AzureCLI@2
+    displayName: 'Azure CLI Login'
+    inputs:
+      azureSubscription: HubApp-cli # Use your Azure service connection here
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: 'az account show'
+
+  - task: AzureContainerApps@1
+    inputs:
+      azureSubscription: 'HubApp-cli'
+      containerAppName: 'brocker-be'
+      resourceGroup: 'HubApp'
+      imageToDeploy: 'hubapp.azurecr.io/brocker-be:$(Build.SourceBranchName)-$(Build.BuildId)'
+
+  - script: |
+      echo test
+      git log -1 --pretty=format:"%s"
+      COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s")
+      COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
+      echo $COMMIT_MESSAGE
+      #curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Deploy To DEV\n\tTriggered by: $(Build.RequestedFor)-$COMMIT_AUTHOR\n\tCommit Details: $COMMIT_MESSAGE\n\tCommit ID: https://github.com/webatts/p2p-payments-fe/commit/$(Build.SourceVersion)\n\tTarget Application: https://devclient.inzo.co/\"}" https://hooks.slack.com/services/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
+      curl -X POST -H 'Content-type: application/json' --data "{
+            \"text\": \"Deploy To BROKER BE "develop"\",
+            \"attachments\": [
+              {
+                \"fallback\": \"Commit Details\",
+                \"text\":  \"This commit Triggered by: ${COMMIT_AUTHOR}\",
+                \"fields\": [
+                  {
+                    \"title\": \"Commit URL\",
+                    \"value\": \"<https://github.com/webatts/broker-be/commit/$(Build.SourceVersion)|Click here for commit details>\"
+                  },
+                  {
+                    \"title\": \"Commit Details\",
+                    \"value\": \"<https://github.com/webatts/broker-be/commit/$(Build.SourceVersion)|${COMMIT_MESSAGE}>\"
+                  },
+                  {
+                    \"title\": \"Commit Author\",
+                    \"value\": \"${COMMIT_AUTHOR}\"
+                  },
+                  {
+                    \"title\": \"Target Application\",
+                    \"value\": \"<https://brocker-be.bravestone-66be93d4.uksouth.azurecontainerapps.io/|Click here to INZO-DEV-BE>\"
+                  },
+                  {
+                    \"title\": \"API URLs\",
+                    \"value\": \"<https://brocker-be.bravestone-66be93d4.uksouth.azurecontainerapps.io/swagger-ui/index.html|Click here to INZO-SWAGGER-UI>\"
+                  }
+                ]
+              }
+            ]
+          }" https://hooks.slack.com/services/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
+
+    displayName: 'Sent Channel Notification'
+
+
+
+pr: none

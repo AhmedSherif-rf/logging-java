@@ -1,0 +1,417 @@
+openapi: 3.0.3
+info:
+  title: Common Models and APIs
+  description: "All Common Models Are here\r\n\r\nAll authorized users allowed, no roles & authorities."
+  version: '1'
+components:
+  schemas:
+    User:
+      xml:
+        name: user
+      x-stoplight:
+        id: c9ky1gdao7jd3
+      allOf:
+        - type: object
+          properties:
+            userId:
+              type: integer
+              format: int64
+              example: 10
+              x-stoplight:
+                id: wcsx77eb9rgtb
+              readOnly: true
+            firstName:
+              type: string
+              example: John
+            lastName:
+              type: string
+              example: James
+            email:
+              type: string
+              example: john@email.com
+              format: email
+            phoneNumber:
+              type: string
+              example: '12345'
+              x-stoplight:
+                id: 62e8nok34lvkk
+              format: PhoneNumber
+            enabled:
+              type: boolean
+              x-stoplight:
+                id: rjyot7rkom70u
+            langId:
+              type: string
+              x-stoplight:
+                id: kleofyuc7hy85
+              minLength: 2
+              maxLength: 2
+              example: PL
+              format: LanguageCode
+            online:
+              type: boolean
+              x-stoplight:
+                id: 7z3o9yhcmuwqf
+              readOnly: true
+            active:
+              type: boolean
+              x-stoplight:
+                id: ley8rsalqn5li
+            termsAccepted:
+              type: boolean
+              x-stoplight:
+                id: yvww341gn9u3k
+            country:
+              x-stoplight:
+                id: 78yg2krfa3305
+              type: string
+              example: PL
+              format: CountryCode
+              maxLength: 2
+              minLength: 2
+            roles:
+              x-stoplight:
+                id: fscs2ejt6wi80
+              type: array
+              items:
+                type: string
+                example: SuperAdmin
+        - $ref: '#/components/schemas/AuditAttributes'
+    Role:
+      title: Role
+      x-stoplight:
+        id: 64qv4bgsc3ap7
+      type: object
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: 1x4731zypzgrm
+        name:
+          x-stoplight:
+            id: 21hxor5rjm3ja
+          enum:
+            - MERCHANT
+            - ADMIN
+            - MANAGER
+            - SUPER_USER
+    PageQuery:
+      title: PageQuery
+      x-stoplight:
+        id: t0074iq21ccum
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          x-stoplight:
+            id: n3kffag7yb2pt
+          default: 0
+          format: int32
+          minimum: 0
+        pageSize:
+          type: integer
+          x-stoplight:
+            id: e2x2ac8rlet48
+          format: int32
+          minimum: 1
+          default: 10
+        sortColumn:
+          type: string
+          x-stoplight:
+            id: vkn8bncnsfnyk
+          description: Column id matching the column from the response
+        sortDirection:
+          x-stoplight:
+            id: meqnwef8npimc
+          enum:
+            - ASC
+            - DESC
+    AuditAttributes:
+      title: AuditAttributes
+      x-stoplight:
+        id: nebt4et2p3mam
+      type: object
+      properties:
+        createdAt:
+          type: string
+          x-stoplight:
+            id: v84mmc7cg5kwt
+          format: date-time
+          readOnly: true
+        createdBy:
+          type: integer
+          x-stoplight:
+            id: zcajmknkir2tb
+          example: 141
+          minimum: 0
+          description: ID of the user who created the object
+          readOnly: true
+        lastModifiedAt:
+          type: string
+          x-stoplight:
+            id: tqfpmmzt7h3lu
+          format: date-time
+          readOnly: true
+        lastModifiedBy:
+          type: integer
+          x-stoplight:
+            id: c918p23guht9p
+          example: 141
+          minimum: 0
+          description: ID of the user who last modified the object
+          readOnly: true
+    Pageable:
+      type: object
+      x-stoplight:
+        id: 5t4hi4f1nclv2
+      properties:
+        pageNumber:
+          minimum: 0
+          type: integer
+          format: int32
+          x-stoplight:
+            id: aqij4p844ybdg
+        pageSize:
+          minimum: 1
+          type: integer
+          format: int32
+          x-stoplight:
+            id: 5v3f0nmdlwyua
+        sort:
+          $ref: '#/components/schemas/Sort'
+        search:
+          type: string
+          x-stoplight:
+            id: 5dolnvktmyetb
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/SortObject'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+        paged:
+          type: boolean
+      x-stoplight:
+        id: k7r3cqxfiq0tr
+    Sort:
+      type: object
+      x-stoplight:
+        id: o3d11zdoqzdys
+      properties:
+        direction:
+          type: string
+        column:
+          type: string
+          x-stoplight:
+            id: oi22ycmn1nhxg
+      title: ''
+    ErrorResponse:
+      title: ErrorResponse
+      x-stoplight:
+        id: xvgqgijzd6em6
+      type: object
+      properties:
+        errorCode:
+          type: string
+          x-stoplight:
+            id: lhw3ev857rc5g
+        errorMessage:
+          type: string
+          x-stoplight:
+            id: 2tn40ngelj5cx
+  securitySchemes: {}
+  requestBodies:
+    LoginRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                x-stoplight:
+                  id: 6ebv1ceu2aqpo
+              password:
+                type: string
+                x-stoplight:
+                  id: nsmn4sc83ekzk
+          examples:
+            Example 1:
+              value:
+                email: ismoil.atajanov@webbats.com
+                password: Password12345
+  responses:
+    ErrorResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errorCode:
+                type: string
+                x-stoplight:
+                  id: tsw0w0b1w15d1
+              errorMessage:
+                type: string
+                x-stoplight:
+                  id: 93jf68to2oer9
+    ForbiddenResponse:
+      description: Current user does not have access to requested resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: '403'
+                errorMessage: Access to requested resource was denied.
+    InvalidUserOrPasswordResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: '401'
+                errorMessage: string
+    UnauthorizedResponse:
+      description: Unauthorized Access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: '401'
+                errorMessage: Unauthorized Access
+    NotFoundByIdResponse:
+      description: Example response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: 404-1
+                errorMessage: 'Object with id - {id} not found'
+    ValidationFailedResponse:
+      description: Input data is incomplete or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: '100004'
+                errorMessage: Input data is incomplete or invalid.
+    EmailConflictResponse:
+      description: Email address already registered.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            Example 1:
+              value:
+                errorCode: '100005'
+                errorMessage: User with given email address already exists.
+paths:
+  /api/common/countries:
+    get:
+      summary: Get all countries
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: qnb8oyf6s1js7
+                  type: object
+                  properties:
+                    countryCode:
+                      type: string
+                      x-stoplight:
+                        id: b06yu0w1u8hel
+                    currencyCode:
+                      type: string
+                      x-stoplight:
+                        id: nvlx2wahzpr5c
+                    phoneCode:
+                      type: string
+                      x-stoplight:
+                        id: mznxmalmlm27n
+              examples:
+                Example 1:
+                  value:
+                    - countryCode: PL
+                      currencyCode: PLN
+                    - countryCode: IQ
+                      currencyCode: IQD
+                    - countryCode: DE
+                      currencyCode: EUR
+                    - countryCode: EG
+                      currencyCode: EGP
+      operationId: get-api-common-countries
+      x-stoplight:
+        id: 1an93un7oc6uo
+      description: "All countries configured as active in HUB countries configuration \r\n\r\nNo security"
+      security: []
+    parameters: []
+  /api/common/languages:
+    get:
+      summary: Get All Languages
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: y1hjvtes52ojj
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      x-stoplight:
+                        id: c3rc4j08hhu5o
+                    name:
+                      type: string
+                      x-stoplight:
+                        id: s6k86q2pfy4it
+              examples:
+                Example 1:
+                  value:
+                    - code: PL
+                      name: Polish
+                    - code: EN
+                      name: English
+      operationId: get-api-common-languages
+      x-stoplight:
+        id: m1xk1xo13ccyt
+      description: 'JWT Authentication, no authorities.'

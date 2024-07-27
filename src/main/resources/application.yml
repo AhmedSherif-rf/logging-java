@@ -1,0 +1,31 @@
+server:
+  port: 9195
+spring:
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:mysql://localhost:3310/p2p_broker?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&characterSetResults=utf-8&connectionCollation=utf8mb4_unicode_ci}
+    username: ${DATASOURCE_USERNAME:root}
+    password: ${DATASOURCE_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${POOL_SIZE:5}
+      max-lifetime: ${CONNECTION_LIFETIME:28800}
+  jpa:
+    jpa:
+      properties:
+        hibernate:
+          connection:
+            characterEncoding: ${HIBERNATE_CHARENC:utf-8}
+            collation: ${HIBERNATE_COLLATION:utf8mb4_unicode_ci}
+            charSet: ${HIBERNATE_CHARSET:utf-8}
+            useUnicode: ${HIBERNATE_UNICODE:true}
+          dialect: ${SQL_DIALECT:org.hibernate.dialect.MySQLDialect}
+    show-sql: ${SHOW_SQL:true}
+    hibernate:
+      ddl-auto: none
+  # Include other property files
+  config:
+    import: properties/system-config.properties
+
+integration:
+  hub:
+    base-url: http://localhost:9194

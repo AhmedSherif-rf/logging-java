@@ -14,20 +14,20 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up JDK 15
+    - name: Set up JDK 21
       uses: actions/setup-java@v2
       with:
         distribution: 'adopt'
-        java-version: '15'
+        java-version: '21'
 
     - name: Build with Maven
-      run: mvn clean install
+      run: mvn --settings settings.xml --global-settings settings.xml package
 
     - name: check the arti
       run: ls -la target
 
     - name: copy arti into root dir 
-      run: cp target/jberet-simple.jar docker/logger.jar
+      run: cp target/broker-0.0.1-SNAPSHOT.jar docker/
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3

@@ -1,0 +1,991 @@
+openapi: 3.0.3
+info:
+  title: Broker API
+  description: ' This API covers all hub broker endpoints (for broker portal)'
+  version: '1'
+servers:
+  - url: 'https://brocker-be.bravestone-66be93d4.uksouth.azurecontainerapps.io'
+    description: dev
+  - url: 'https://broker-api-stage.webbats.com'
+    description: stage
+tags:
+  - name: Broker User Management
+  - name: Authentication
+  - name: Roles & Authorities
+paths:
+  /api/broker/login:
+    post:
+      summary: Login
+      description: '### Login endpoint for Broker Users.'
+      operationId: login-broker
+      requestBody:
+        $ref: common.yaml#/components/requestBodies/LoginRequest
+      responses:
+        '200':
+          description: Login success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+        '401':
+          $ref: common.yaml#/components/responses/InvalidUserOrPasswordResponse
+      security: []
+      x-stoplight:
+        id: jze298vpnzj6u
+      tags:
+        - Authentication
+    parameters: []
+  /api/broker/users:
+    post:
+      summary: Add New Broker User
+      description: "### Required Authorities:\r\n- **broker-users-write**\r\n\r\nUser password is generated and sent to the users email.\r\nValidate email against proper requirements https://webatts.atlassian.net/l/cp/PsZFAe4S"
+      operationId: create-new-broker-user
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrokerUser'
+            examples:
+              Example 1:
+                value:
+                  email: broker@test.com
+                  password: Password_123
+        required: true
+      responses:
+        '200':
+          description: "Broker user created successfully\r\n"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerUser'
+              examples:
+                Example 1:
+                  $ref: '#/components/examples/BrokerUserExample'
+          headers: {}
+        '400':
+          $ref: common.yaml#/components/responses/ValidationFailedResponse
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '409':
+          $ref: common.yaml#/components/responses/EmailConflictResponse
+      security: []
+      x-stoplight:
+        id: xwso2dvsfs5cr
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Authorization
+          description: Bearer 'token'
+          required: true
+      tags:
+        - Broker User Management
+    get:
+      summary: Find All Broker Users
+      tags:
+        - Broker User Management
+      responses:
+        '200':
+          description: Paged Users List
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalElements:
+                    type: integer
+                    x-stoplight:
+                      id: gcf2yfduwemd0
+                    minimum: 0
+                  pageNumber:
+                    type: integer
+                    x-stoplight:
+                      id: hgnpz028g0f4k
+                    minimum: 0
+                    default: 0
+                  pageSize:
+                    type: integer
+                    x-stoplight:
+                      id: 00x3ipeciagdv
+                    minimum: 0
+                  content:
+                    type: array
+                    x-stoplight:
+                      id: t6lfs4a7servo
+                    items:
+                      $ref: '#/components/schemas/BrokerUserPage'
+              examples:
+                Example 1:
+                  value:
+                    - brokerUserId: 1
+                      fullName: Ismoil Atajanov
+                      email: ismoil.atajanov@webbats.com
+                      phoneNumber: '+48589594531'
+                      country: PL
+                      roles:
+                        - 'ROLE_1, ROLE_2'
+                      langId:
+                        - 'PL, EN, RU'
+                      createdBy: '1001'
+                      createdAt: '2019-08-24'
+                    - brokerUserId: 1
+                      fullName: Broker 2
+                      email: broker2@webbats.com
+                      phoneNumber: '+48589594533'
+                      country: IQ
+                      roles: []
+                      langId:
+                        - 'PL, EN'
+                      createdBy: '1001'
+                      createdAt: '2019-08-21'
+                    - brokerUserId: 1
+                      fullName: Broker 3
+                      email: broker3@webbats.com
+                      phoneNumber: '+48589594534'
+                      country: PK
+                      roles:
+                        - ROLE_2
+                      langId:
+                        - 'PL, RU'
+                      createdBy: '1001'
+                      createdAt: '2019-08-23'
+                    - brokerUserId: 1
+                      fullName: Broker 4
+                      email: broker4@webbats.com
+                      phoneNumber: '+48589594535'
+                      country: EG
+                      roles:
+                        - ROLE_1
+                      langId:
+                        - 'EN, RU'
+                      createdBy: '1002'
+                      createdAt: '2019-08-25'
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+      operationId: get-broker-list
+      x-stoplight:
+        id: 4790q3f09e78n
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Authorization
+          description: Bearer token for user authentication
+        - in: query
+          name: pageOptions
+          description: Paging options
+          schema:
+            $ref: common.yaml#/components/schemas/PageQuery
+        - schema:
+            type: object
+            properties:
+              roleId:
+                type: string
+              country:
+                type: string
+              status:
+                $ref: '#/components/schemas/BrokerUserStatus'
+              createdBy:
+                type: integer
+                description: Id of the broker user who created given user
+              language:
+                type: string
+          in: query
+          name: filters
+          description: Filtering options
+          style: deepObject
+          allowReserved: true
+      requestBody:
+        content: {}
+      description: "### Required Authorities:\r\n- **broker-users-read**\r\n\r\nSortable columns: \r\n-email address\r\n-country\r\n-status\r\n-createdBy\r\n-createdAt"
+    parameters: []
+  '/api/broker/users/{userId}':
+    get:
+      summary: Find Broker User By Id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerUser'
+              examples:
+                Example 1:
+                  $ref: '#/components/examples/BrokerUserExample'
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+      operationId: get-broker-by-id
+      parameters: []
+      x-stoplight:
+        id: 76y14k2351l05
+      tags:
+        - Broker User Management
+      description: "### Find an existing user by id\r\n#### Required Authorities:\r\n- **broker-users-read**"
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    put:
+      summary: Edit Broker User
+      tags:
+        - Broker User Management
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerUser'
+              examples:
+                Example 1:
+                  $ref: '#/components/examples/BrokerUserExample'
+        '400':
+          $ref: common.yaml#/components/responses/ValidationFailedResponse
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+        '409':
+          $ref: common.yaml#/components/responses/EmailConflictResponse
+      operationId: broker-user-update
+      x-stoplight:
+        id: ovtxokmp3ejir
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrokerUser'
+      description: "### Update an existing user\r\n#### Required Authorities:\r\n- **broker-users-write**\r\n\r\nPassword should be skipped for edit flow."
+  '/api/broker/users/{userId}/reset-password':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    post:
+      summary: Reset Broker User Password
+      tags:
+        - Broker User Management
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+      operationId: get-api-broker-users-userId-reset-password
+      x-stoplight:
+        id: oqu1jsm843l87
+      description: "### Reset password for existing user\r\n#### Required Authorities:\r\n- **broker-users-write**\r\n"
+      requestBody:
+        content: {}
+  /api/broker/modules/authorities:
+    get:
+      summary: Get All Authorities Grouped by Modules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthorityModule'
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+      operationId: get-api-broker-authorities
+      x-stoplight:
+        id: fi6nqjxpiq29x
+      description: "### All authorities grouped by modules. Used for populating Authorities page for roles.\r\n#### Required Authorities:\r\n- **broker-roles-read**"
+      tags:
+        - Broker Modules
+    parameters: []
+  /api/broker/roles:
+    get:
+      summary: Get All Broker Roles
+      tags:
+        - Roles & Authorities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BrokerRole'
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+      operationId: get-api-broker-role-list
+      x-stoplight:
+        id: fjm5lqer7c8qi
+      description: "### Fetch a list of all broker roles without authorities.\r\n\r\n#### Required Authorities:\r\n- **broker-roles-read**"
+    parameters: []
+    post:
+      summary: Add New Broker Role
+      tags:
+        - Roles & Authorities
+      responses:
+        '201':
+          description: "Created a new role successfully. \r\nRequired Authorities:\r\n- broker-roles-write"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerRoleFull'
+        '400':
+          $ref: common.yaml#/components/responses/ValidationFailedResponse
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+      operationId: post-api-broker-role
+      x-stoplight:
+        id: gmy499t31yj5o
+      description: "### Endpoint for adding new broker roles. \r\n- For create flow, authorities list is not provided. \r\n- For duplicate role flow, authorities list is provided from another role.\r\n#### Required Authorities:\r\n- **broker-roles-write**"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrokerRoleFull'
+        description: Authorities can be skipped to create a role with no authorities assigned.
+  '/api/broker/roles/{roleId}':
+    parameters:
+      - schema:
+          type: string
+        name: roleId
+        in: path
+        required: true
+    put:
+      summary: Update Broker Role Details
+      tags:
+        - Roles & Authorities
+      responses:
+        '200':
+          description: "Update description of an existing broker role\r\nRequired Authorities:\r\n- broker-roles-write"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerRole'
+        '400':
+          $ref: common.yaml#/components/responses/ValidationFailedResponse
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+      operationId: put-api-broker-role-roleId
+      x-stoplight:
+        id: vo850boy73x6l
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrokerRole'
+      description: "### Update role detail\r\n#### Required Authorities:\r\n- **broker-roles-write**"
+    delete:
+      summary: Delete Broker Role
+      tags:
+        - Roles & Authorities
+      responses:
+        '200':
+          description: Role deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roleId:
+                    type: string
+                    x-stoplight:
+                      id: rjsl1jugs870a
+                    description: ID of the deleted role.
+              examples:
+                Example 1:
+                  value:
+                    roleId: AVERAGE_AGENT
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
+      operationId: delete-api-broker-roles-roleId
+      x-stoplight:
+        id: f2sr2zhxg4thc
+      description: "### Delete an existing role if no users are assigned to it.\r\n#### Required Authorities:\r\n- **broker-roles-delete**"
+    get:
+      description: ''
+      operationId: ''
+  '/api/broker/roles/{roleId}/authorities':
+    parameters:
+      - schema:
+          type: string
+        name: roleId
+        in: path
+        required: true
+    put:
+      summary: Update Broker Role Authorities
+      tags:
+        - Roles & Authorities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrokerRoleFull'
+        '400':
+          $ref: common.yaml#/components/responses/ValidationFailedResponse
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+      operationId: get-api-broker-role-roleId-authorities
+      x-stoplight:
+        id: 6pm0e8oozcp5r
+      description: "### Update list of authorities for an existing roles\r\n#### Required Authorities:\r\n- **broker-roles-write**\r\n#### Implementation notes\r\nThe list of authorities overrides the existing authorities for the given role"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                x-stoplight:
+                  id: zkcbj7nvsup38
+                type: string
+    get:
+      summary: Get All Broker Role Authorities
+      tags:
+        - Roles & Authorities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  x-stoplight:
+                    id: nswe2yy9ewyfa
+                  type: string
+              examples:
+                Example 1:
+                  value:
+                    - AUTH001
+                    - AUTH002
+                    - AUTH003
+        '401':
+          $ref: common.yaml#/components/responses/UnauthorizedResponse
+        '403':
+          $ref: common.yaml#/components/responses/ForbiddenResponse
+        '404':
+          $ref: common.yaml#/components/responses/NotFoundByIdResponse
+      operationId: get-api-broker-roles-roleId-authorities
+      x-stoplight:
+        id: tab28eld9zs9w
+      description: "### All authorities assigned to an existing broker role\r\n#### Required Authorities:\r\n- **broker-roles-read**"
+components:
+  schemas:
+    BrokerUser:
+      title: BrokerUser
+      x-stoplight:
+        id: uyctprlti39k2
+      allOf:
+        - type: object
+          properties:
+            brokerUserId:
+              type: integer
+              format: int64
+              example: 10
+              x-stoplight:
+                id: wcsx77eb9rgtb
+              readOnly: true
+            fullName:
+              type: string
+              x-stoplight:
+                id: 44yj5y02ugivo
+              readOnly: true
+            firstName:
+              type: string
+              example: John
+              writeOnly: true
+            lastName:
+              type: string
+              example: James
+              writeOnly: true
+            email:
+              type: string
+              example: john@email.com
+              format: email
+            phoneNumber:
+              type: string
+              example: '12345'
+              x-stoplight:
+                id: 62e8nok34lvkk
+              format: PhoneNumber
+              maxLength: 15
+              pattern: Starts with a '+'
+            languages:
+              type: array
+              x-stoplight:
+                id: kleofyuc7hy85
+              minItems: 1
+              items:
+                x-stoplight:
+                  id: feuummc3leblt
+                type: string
+                format: LanguageCode
+                example: PL
+                default: EN
+            country:
+              x-stoplight:
+                id: 78yg2krfa3305
+              type: string
+              example: PL
+              format: CountryCode
+              maxLength: 2
+              minLength: 2
+            roles:
+              x-stoplight:
+                id: fscs2ejt6wi80
+              type: array
+              items:
+                type: string
+                example: SuperBroker
+            termsAccepted:
+              type: boolean
+              x-stoplight:
+                id: yvww341gn9u3k
+              default: false
+              writeOnly: true
+            status:
+              $ref: '#/components/schemas/BrokerUserStatus'
+        - $ref: common.yaml#/components/schemas/AuditAttributes
+        - type: object
+          x-stoplight:
+            id: e3qv3ydzxdypb
+      x-examples:
+        Example 1:
+          $ref: '#/components/examples/BrokerUserExample'
+    BrokerUserPage:
+      title: BrokerUserPageDto
+      x-stoplight:
+        id: se0bmt1hjd017
+      type: object
+      description: Model represents a row in broker users list endpoint
+      x-examples:
+        Example 1:
+          brokerId: 0
+          fullName: Broker User
+          emailAddress: user@example.com
+          countryCode: PL
+          roles:
+            - super_broker
+          status: ACTIVE
+          languages:
+            - Polish
+      properties:
+        brokerUserId:
+          type: integer
+          format: int64
+          example: 10
+          x-stoplight:
+            id: wcsx77eb9rgtb
+          readOnly: true
+        fullName:
+          type: string
+          x-stoplight:
+            id: 44yj5y02ugivo
+          readOnly: true
+        email:
+          type: string
+          example: john@email.com
+          format: email
+        phoneNumber:
+          type: string
+          example: '12345'
+          x-stoplight:
+            id: 62e8nok34lvkk
+          format: PhoneNumber
+        country:
+          x-stoplight:
+            id: 78yg2krfa3305
+          type: string
+          example: PL
+          format: CountryCode
+          maxLength: 2
+          minLength: 2
+        roles:
+          x-stoplight:
+            id: fscs2ejt6wi80
+          type: array
+          items:
+            type: string
+            example: SuperBroker
+            status:
+              $ref: '#/components/schemas/BrokerUserStatus'
+        langId:
+          type: array
+          x-stoplight:
+            id: kleofyuc7hy85
+          minItems: 1
+          items:
+            x-stoplight:
+              id: feuummc3leblt
+            type: string
+            format: LanguageCode
+            example: PL
+            default: EN
+        status:
+          $ref: '#/components/schemas/BrokerUserStatus'
+        createdBy:
+          type: string
+          x-stoplight:
+            id: 3cn1btltqy3bk
+          description: ID Of broker user
+        createdAt:
+          type: string
+          x-stoplight:
+            id: lcoj9kej7nwe4
+          format: date
+    CountryPage:
+      type: object
+      x-stoplight:
+        id: 14tft9tcv8g32
+      x-examples: {}
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountryHubConfig'
+        number:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: common.yaml#/components/schemas/Pageable
+        empty:
+          type: boolean
+    CountryHubConfig:
+      title: CountryDto
+      x-stoplight:
+        id: ry3ciwvmndx55
+      type: object
+      x-examples:
+        Example 2:
+          countryCode: string
+          currencyCode: string
+          CORT: 0
+          p2pMaxProfitRatio: 0
+          ttpVolumeTreshold: string
+          ttpOrdersThreshold: string
+          lastUpdatedBy: string
+          lastUpdatedAt: null
+          '':
+            lastUpdatedAt: '2019-08-24T14:15:22Z'
+            lastUpdatedBy: 0
+            createdAt: '2019-08-24T14:15:22Z'
+            createdBy: 0
+        Example 1:
+          countryCode: string
+          currencyCode: string
+          CORT: 0
+          p2pMaxProfitRatio: 0
+          ttpVolumeTreshold: string
+          ttpOrdersThreshold: string
+          lastUpdatedBy: string
+          lastUpdatedAt: null
+          aa: 0
+      properties:
+        countryCode:
+          type: string
+          x-stoplight:
+            id: w65dirwag4sng
+        currencyCode:
+          type: string
+          x-stoplight:
+            id: o1gu9kc0g3wt2
+        CORT:
+          type: integer
+          x-stoplight:
+            id: tj8ipg51d59ke
+        p2pMaxProfitRatio:
+          type: number
+          x-stoplight:
+            id: 9fln46qn5wpfi
+        ttpVolumeTreshold:
+          type: string
+          x-stoplight:
+            id: ofdt7cnrta1oq
+        ttpOrdersThreshold:
+          type: string
+          x-stoplight:
+            id: mzwfwc39d2mml
+        lastUpdatedBy:
+          type: integer
+          x-stoplight:
+            id: lonku9wei1jsm
+          format: int64
+        lastUpdatedAt:
+          x-stoplight:
+            id: hav61bw9iyj0f
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          x-stoplight:
+            id: ax97mp3snw40g
+          format: int64
+        createdAt:
+          type: string
+          x-stoplight:
+            id: lh2fy36d9vjqv
+          format: date-time
+        isActive:
+          type: boolean
+          x-stoplight:
+            id: yrt7yv4m0b676
+    BrokerUserFilters:
+      title: BrokerUsersFilters
+      x-stoplight:
+        id: n9g6orvfrt8bx
+      type: object
+      properties:
+        filters:
+          type: object
+          x-stoplight:
+            id: yrhyzggj4iiv0
+          properties:
+            role:
+              type: string
+              x-stoplight:
+                id: 9r3uw1ympd9l0
+            country:
+              type: string
+              x-stoplight:
+                id: 10ywo90hl0i2g
+            canHandleAppeals:
+              type: string
+              x-stoplight:
+                id: xtv7w1zc42zsx
+    HubCountryFilters:
+      title: HubCountryFilters
+      x-stoplight:
+        id: u4b0uzyvjvi5q
+      type: object
+      properties:
+        filters:
+          type: object
+          x-stoplight:
+            id: l44sfgpyjwxlx
+          properties:
+            currencyCode:
+              type: string
+              x-stoplight:
+                id: acvjvrrg6tvsx
+    Authority:
+      title: Authority
+      x-stoplight:
+        id: qviey6p94fi54
+      type: object
+      properties:
+        authorityCode:
+          type: string
+          x-stoplight:
+            id: 5upi47jskwy01
+        authorityName:
+          type: string
+          x-stoplight:
+            id: nz31uuy46c7gj
+        authorityDesc:
+          type: string
+          x-stoplight:
+            id: gzpyeuaqq9n9m
+      x-examples:
+        Example 1:
+          authorityCode: can_add_broker_user
+          authorityName: Can Add Broker User
+          authorityDesc: Defines write access to broker users
+    AuthorityModule:
+      title: AuthorityModule
+      x-stoplight:
+        id: 4mm2x323rm64e
+      type: object
+      x-examples:
+        Example 1:
+          moduleCode: broker_users_module
+          moduleName: Broker Users Module
+          authorities:
+            - authorityCode: can_add_broker_user
+              authorityName: Can Add Broker User
+              authorityDesc: Defines write access to broker users
+            - authorityCode: can_read_broker_user
+              authorityName: Can Add Broker User
+              authorityDesc: Defines write access to broker users
+      properties:
+        moduleCode:
+          type: string
+          x-stoplight:
+            id: ygpaacexyhctz
+        moduleName:
+          type: string
+          x-stoplight:
+            id: 1zmjtoqmb7h5s
+        moduleDesc:
+          type: string
+          x-stoplight:
+            id: 4t3b0fyvmw4ut
+        authorities:
+          type: array
+          x-stoplight:
+            id: adskoyalw1oxt
+          items:
+            $ref: '#/components/schemas/Authority'
+    BrokerRoleFull:
+      title: Role
+      x-stoplight:
+        id: hs2acl824jvqu
+      allOf:
+        - type: object
+          properties:
+            roleId:
+              type: string
+              x-stoplight:
+                id: ykzjo8y1nkxg5
+              readOnly: true
+            roleName:
+              type: string
+              x-stoplight:
+                id: vismcxhsisbg6
+            roleDesc:
+              type: string
+              x-stoplight:
+                id: g34uf741fduyc
+            authorities:
+              type: array
+              x-stoplight:
+                id: z3nvkiqh54ezx
+              nullable: true
+              items:
+                x-stoplight:
+                  id: 5osdbe0ukxzbv
+                type: string
+        - $ref: common.yaml#/components/schemas/AuditAttributes
+    BrokerRole:
+      title: BrokerRole
+      x-stoplight:
+        id: 3f2gmhmjm7b5a
+      allOf:
+        - type: object
+          properties:
+            roleId:
+              type: string
+              readOnly: true
+            roleName:
+              type: string
+            roleDesc:
+              type: string
+        - $ref: common.yaml#/components/schemas/AuditAttributes
+    BrokerUserStatus:
+      title: BrokerUserStatus
+      x-stoplight:
+        id: 4abt2b6ibiyb8
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - SUSPENDED
+        - BLOCKED
+      example: ACTIVE
+      default: ACTIVE
+      readOnly: true
+  securitySchemes:
+    api_key:
+      name: apiKey
+      type: apiKey
+      in: cookie
+  responses:
+    test:
+      description: ''
+    ErrorResponse:
+      description: Role must not be assigned to any broker user.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errorCode:
+                type: integer
+                x-stoplight:
+                  id: w6ylv3uo0y2ba
+                minimum: 100000
+                maximum: 999999
+              errorMessage:
+                type: string
+                x-stoplight:
+                  id: lcfnk29ubyd8v
+          examples:
+            Example 1:
+              value:
+                errorCode: 100009
+                errorMessage: Email address already registered.
+  examples:
+    BrokerUserExample:
+      value:
+        brokerUserId: 10
+        fullName: Broker 1
+        email: broker1@webbats.com
+        phoneNumber: '+48577777777'
+        languages:
+          - PL
+          - EN
+        country: PL
+        roles:
+          - ROLE_1
+          - ROLE_2
+        termsAccepted: true
+        status: ACTIVE
+        createdAt: '2019-08-24T14:15:22Z'
+        createdBy: 141
+        lastModifiedAt: '2019-08-24T14:15:22Z'
+        lastModifiedBy: 141

@@ -1,4 +1,5 @@
-FROM adoptopenjdk:15-jre-hotspot
+FROM eclipse-temurin:21-jdk-alpine
 WORKDIR app
-COPY target/jberet-simple.jar  logger.jar          
-CMD java -jar logger.jar simple.xml jobParam1=x jobParam2=y
+COPY broker-0.0.1-SNAPSHOT.jar service.jar
+
+CMD java -jar service.jar --server.port=80
