@@ -1,2 +1,0 @@
-# rules for automated tests
-sample 55
