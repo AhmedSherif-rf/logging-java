@@ -1,286 +1,176 @@
-# Simple logger
+# resurfaceio-logger-java
+Easily log API requests and responses to your own <a href="https://resurface.io">security data lake</a>.
 
-Welcome to Simple Logger, a Spring Boot plugin/service that will set up logging in your application with just one annotation! <br />
-For this plugin to work in your project, it requires the following:
-* Java 17 or higher
-* Spring Boot 3.1.4 or higher
+[![Maven Central](https://img.shields.io/maven-central/v/io.resurface/resurfaceio-logger)](https://maven-badges.herokuapp.com/maven-central/io.resurface/resurfaceio-logger)
+[![CodeFactor](https://www.codefactor.io/repository/github/resurfaceio/logger-java/badge)](https://www.codefactor.io/repository/github/resurfaceio/logger-java)
+[![License](https://img.shields.io/github/license/resurfaceio/logger-java)](https://github.com/resurfaceio/logger-java/blob/master/LICENSE)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-green.svg)](https://github.com/resurfaceio/logger-java/blob/master/CONTRIBUTING.md)
 
-To use it in your project, import a maven dependency of the last stable release.
-```
+## Contents
+
+<ul>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#installing_with_maven">Installing With Maven</a></li>
+<li><a href="#logging_from_servlet_filter">Logging From Servlet Filter</a></li>
+<li><a href="#logging_from_spring_boot">Logging From Spring Boot</a></li>
+<li><a href="#logging_from_spark_framework">Logging From Spark Framework</a></li>
+<li><a href="#logging_from_jersey">Logging From Jersey</a></li>
+<li><a href="#logging_with_api">Logging With API</a></li>
+<li><a href="#privacy">Protecting User Privacy</a></li>
+</ul>
+
+<a name="dependencies"/>
+
+## Dependencies
+
+Requires Java 8+ and Java servlet classes, which are not included. No other dependencies to conflict with your app.
+
+<a name="installing_with_maven"/>
+
+## Installing with Maven
+
+Add this section to `pom.xml`:
+
+```xml
 <dependency>
-  <groupId>com.simple</groupId>
-  <artifactId>logging</artifactId>
-  <version>0.8.0</version>
+    <groupId>io.resurface</groupId>
+    <artifactId>resurfaceio-logger</artifactId>
+    <version>2.2.0</version>
 </dependency>
 ```
 
-## Getting started
+Add this section too if servlet classes are not already available.
 
-In order to set up basic logging with all default values in your application, you need to annotate your main method with the SimpleLogging annotation.
-
-
+```xml
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>RELEASE</version>
+</dependency>
 ```
-@SpringBootApplication
-@SimpleLogging
-public class ExampleApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(ExampleApplication.class, args);
+<a name="logging_from_servlet_filter"/>
+
+## Logging From Servlet Filter
+
+After <a href="#installing_with_maven">installing the library</a>, add a logging filter to `web.xml`.
+
+```xml
+<filter>
+    <filter-name>HttpLoggerForServlets</filter-name>
+    <filter-class>io.resurface.HttpLoggerForServlets</filter-class>
+    <init-param>
+        <param-name>url</param-name>
+        <param-value>http://localhost:7701/message</param-value>
+    </init-param>
+    <init-param>
+        <param-name>rules</param-name>
+        <param-value>include debug</param-value>
+    </init-param>
+</filter>
+<filter-mapping>
+    <filter-name>HttpLoggerForServlets</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
+
+Add a CDATA section when specifying multiple rules at once like this:
+
+```xml
+    <init-param>
+        <param-name>rules</param-name>
+        <param-value><![CDATA[
+            include debug
+            sample 10
+        ]]></param-value>
+    </init-param>
+```
+
+<a name="logging_from_spring_boot"/>
+
+## Logging From Spring Boot
+
+After <a href="#installing_with_maven">installing the library</a>, configure a `FilterRegistrationBean`
+to add a logging servlet filter.
+
+```java
+@Bean
+public FilterRegistrationBean httpLoggerFilter() {
+    FilterRegistrationBean frb = new FilterRegistrationBean();
+    frb.setFilter(new io.resurface.HttpLoggerForServlets());
+    frb.setName("HttpLoggerForServlets");
+    frb.addUrlPatterns("/*");
+    frb.addInitParameter("url", "http://localhost:7701/message");
+    frb.addInitParameter("rules", "include debug");
+    return frb;
+}
+```
+
+<a name="logging_from_spark_framework"/>
+
+## Logging From Spark Framework
+
+After <a href="#installing_with_maven">installing the library</a>, create a logger and call it from the routes of interest.
+
+```java
+import io.resurface.*;
+
+HttpLogger logger = new HttpLogger("http://localhost:7701/message", "include debug");
+
+get("/hello", (request, response) -> {
+    String response_body = "Hello World";
+    HttpMessage.send(logger, request.raw(), response.raw(), response_body);
+    return response_body;
+});
+
+post("/hello_post", (request, response) -> {
+    String response_body = "POSTED: " + request.body();
+    HttpMessage.send(logger, request.raw(), response.raw(), response_body, request.body());
+    return response_body;
+});
+```
+
+Alternatively configure an `after` filter to log across multiple routes at once.
+
+```java
+after((request, response) -> {
+    if (response.body() != null) {  // log successful responses only, not 404/500s
+        HttpMessage.send(logger, request.raw(), response.raw(), response.body(), request.body());
     }
-}
-```
-This will enable logging for all your REST Controller methods, it will log the request and the response for each call of the method and any errors that occur during the process.
-If you want to disable logging for a specific method or class, you can annotate it with IgnoreLogging annotation.
-```
-public class ExampleClass {
-
-    @IgnoreLogging
-    public void exampleMethod() {
-       // this annotation can be used either above a method or above a class depending on your needs
-    }
-}
-```
-The SimpleLogging annotation comes with a set of default values that you can customise according to your needs, take a look at all the options explained:
-
-```
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Import(SimpleLoggingRegistrar.class)
-public @interface SimpleLogging {
-    int maxFileSizeMb() default 50; // maximum file size of a singular log file in megabytes
-
-    int maxStringSizeMb() default 5; // maximum string size of a loggable object, if the string takes more than that it is ignored
-
-    String logFilePath() default "logs"; // path to where you want your logs to be saved
-
-    String zippedLogFilePath() default "logs"; // path to where you want your zipped logs to be saved, your logs get zipped automatically after days defined in zipOldLogFilesOlderThanDays property have passed
-
-    String charset() default "UTF-8"; // charset for logging (java.nio.charset.Charset is used here. If your custom charset is unrecognised by it, the logger will use the default charset)
-
-    int maxCacheHistoryLogs() default 100; // the maximum number of logs to be cached in memory, used for CustomFileHandler
-
-    int logRetentionLengthInDays() default 15; // after how many days logs get deleted
-
-    int zipOldLogFilesOlderThanDays() default 4; // after how many days logs get zipped
-
-    String logDeletionCronScheduler() default "0 0 0 * * ?"; // at which time you'd like to schedule log deletion, uses CRON format
-
-    String applicationName() default "application"; // defines the prefix for your log files 
-
-    boolean compressOldLogs() default true; // you are free to disable log compression if you don't need it
-
-    String loggingLevel() default "ALL"; // defines what log levels are saved into a file
-
-    boolean logToConsole() default false; // defines if you want your logs to be present in console as well
-
-    int maxBackupFiles() default 5; // defines the maximum amount of logs in daily log rotation 
-
-}
+});
 ```
 
-These values can be set in the main class as parameters of @SimpleLogging annotation, like following:
-```
-@SpringBootApplication
-@SimpleLogging(logToConsole = true, maxBackupFiles = 20, compressOldLogs = false)
-public class ExampleApplication {
+<a name="logging_from_jersey"/>
 
-    public static void main(String[] args) {
-        SpringApplication.run(ExampleApplication.class, args);
-    }
+## Logging From Jersey
 
-}
-```
+After <a href="#installing_with_maven">installing the library</a>, register a logger as a Jersey filter/interceptor.
+Note this will only log usage when a response body is returned.
 
-If you want to include a custom property while logging, you can define it like this:
-```
-import com.simple.logging.application.model.CustomLogProperties;
-...
-
-@RestController
-public class ExampleController {
-
-    private ExampleService exampleService;
-
-    @PostMapping
-    public ResponseEntity<List<ExampleDTO>> getExamples(@RequestBody @Valid final ExampleRequest examplerequest){
-        CustomLogProperties.setProperty("userId", "1224");
-        return new ResponseEntity<>(exampleService.getExamples(examplerequest), HttpStatus.OK);
-    }
-}
-```
-This way, everything logged during the flow of the method your custom property will also be logged along with your payloads: 
-```
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 HTTP METHOD - POST
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 REQUEST URL - http://localhost:8080/api/example
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 REQUEST HANDLER - com.app.example.ExampleController#getExamples(ExampleRequest)
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 HTTP STATUS - 200
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 userId - 1224
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 REQUEST BODY: {"eligible":true,"sortField":"TITLE","direction":"ASC"}
-2024-06-25 15:00:48 INFO: 9c2bb054-ea33-4219-9b80-9c4bd71bb3e2 RESPONSE BODY: []
+```java
+ResourceConfig resourceConfig = new ResourceConfig(...);
+resourceConfig.register(new io.resurface.HttpLoggerForJersey("http://localhost:7701/message", "include debug"));
+HttpServer server = GrizzlyHttpServerFactory.createHttpServer(BASE_URI, resourceConfig, false);
 ```
 
-## Log Utility Features
+<a name="logging_with_api"/>
 
-### Log Utility
+## Logging With API
 
-The `LogUtility` class provides various methods for handling log files.
+Loggers can be directly integrated into your application using our [API](API.md). This requires the most effort compared with
+the options described above, but also offers the greatest flexibility and control.
 
-#### Features:
-- **Move File**: Moves a file to a new location.
-- **Rename File**: Renames a file.
-- **Delete File**: Deletes a file.
-- **Compress File**: Compresses a log file into a ZIP archive.
-- **Retrieve All Log Files**: Retrieves a list of all log files in the specified directory.
-- **Retrieve Log Files Between Dates**: Retrieves a list of log files between specified dates.
-- **Retrieve Log Files For Date**: Retrieves a list of log files for a specified date.
-- **Search Log File**: Searches for a keyword in a log file and returns matching lines.
-- **Generate File From Search**: Generates a file with the specified name and writes the provided list of strings to it.
-- **Minify JSON String**: Minifies a JSON string by removing unnecessary whitespaces and line breaks.
+[API documentation](API.md)
 
-### Payload History
+<a name="privacy"/>
 
-The `PayloadHistory` class provides methods for managing a history of `Payload` objects.
+## Protecting User Privacy
 
-#### Features:
-- **Add Log**: Adds a log entry to the history.
-- **Remove Log**: Removes a log entry from the history.
-- **Clear Log**: Clears all log entries from the history.
-- **View Logs**: Returns the list of log entries in the history.
+Loggers always have an active set of <a href="https://resurface.io/rules.html">rules</a> that control what data is logged
+and how sensitive data is masked. All of the examples above apply a predefined set of rules (`include debug`),
+but logging rules are easily customized to meet the needs of any application.
 
-## Usage
+<a href="https://resurface.io/rules.html">Logging rules documentation</a>
 
-### Log Utility
-
-#### Retrieve All Log Files
-```
-List<File> logFiles = LogUtility.getAllLogFiles();
-```
-
-#### Retrieve Log Files Between Dates
-```
-LocalDate startDate = LocalDate.of(2023, 1, 1);
-LocalDate endDate = LocalDate.of(2023, 12, 31);
-List<File> logFiles = LogUtility.getLogFilesBetweenDates(startDate, endDate);
-```
-
-#### Retrieve Log Files For Date
-```
-LocalDate date = LocalDate.of(2023, 6, 1);
-List<File> logFiles = LogUtility.getLogFilesForDate(date);
-```
-
-#### Move a File
-```
-Path sourcePath = Path.of("/path/to/source/file.log");
-Path targetPath = Path.of("/path/to/target/file.log");
-LogUtility.moveFile(sourcePath, targetPath);
-```
-
-#### Rename a File
-```
-Path sourcePath = Path.of("/path/to/source/file.log");
-String newName = "newFileName.log";
-LogUtility.renameFile(sourcePath, newName);
-```
-
-#### Delete a File
-```
-Path filePath = Path.of("/path/to/file.log");
-LogUtility.deleteFile(filePath);
-```
-
-#### Compress a File
-```
-Path filePath = Path.of("/path/to/file.log");
-LogUtility.zipFile(filePath);
-```
-
-#### Search Through a Log File
-```
-Path filePath = Path.of("/path/to/file.log");
-String keyword = "searchKeyword";
-List<String> matchedLines = LogUtility.searchLogFile(filePath, keyword); // These lines also contain the origin file name and the line number
-```
-
-#### Generate File From Search
-```
-String fileName = "searchResults";
-List<String> lines = matchedLines; // Lines obtained from the search
-LogUtility.generateFileFromSearch(fileName, lines);
-```
-
-#### Minify JSON String
-```
-String jsonString = "{ \"key\": \"value\" }";
-String minifiedJson = LogUtility.minifyJsonString(jsonString);
-```
-
-### Payload History
-
-#### Add Log
-```
-Payload logEntry = new Payload();
-PayloadHistory.addLog(logEntry);
-```
-
-#### Remove Log
-```
-Payload logEntry = new Payload();
-PayloadHistory.removeLog(logEntry);
-```
-
-#### Clear Log History
-```
-PayloadHistory.clearLog();
-```
-
-#### View All Log History
-```
-List<Payload> logEntries = PayloadHistory.viewLogs();
-```
-
-#### Payload object
-```
-public class Payload {
-    private String httpMethod;
-    private String requestUrl;
-    private String requestHandler;
-    private Integer httpStatus;
-    private String requestBody;
-    private String responseBody;
-    private LocalDateTime timestamp;
-    private String uuid;
-    private Map<String, String> customProperties;
-}
-```
-This object represents the logged payload, and can be used to manipulate it using PayloadHistory methods.
-Each payload logged is being automatically saved to this list, so for basic usage, just use 'viewLogs()' function to view them without any hassle.
-There are options to add new logs, this was added in case user wishes to log something extra not being logged automatically.
-
-#### Please note this log history object is being saved in memory - meaning unless you save it and re-instantiate it at startup, it will be cleared once the application shuts down.
-
-###  Log implementation
-#### Re-implementation of a standard Java logger, just encapsulated so it's easier to use, also without the need of instantiation
-```
-Log.log("Basic level of logging");
-Log.info("Info level of logging with parameters: {} {}", arg1, arg2 ...);
-Log.warn("This is a warning message");
-Log.error("An error occurred: %s", "you may also use %s as a placeholder for parameters");
-```
-
-All of these may contain endless amount of arguments, and you may use placeholders '%s' and '{}' in any of them.
-
-### All of these utility methods are static, so you don't need to instantiate anything!
-
-# Possible issues
-If you're using a SecurityFilterChain in your project, ensure that your requestMatchers are defined. Example:
-```
-.requestMatchers(new AntPathRequestMatcher("/api/**"))
-//instead of
-.requestMatchers("/api/**") 
-```
-Otherwise, you might get an error like the following:
-```
-Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [org.springframework.security.web.SecurityFilterChain]: Factory method 'filterChain' threw exception with message: This method cannot decide whether these patterns are Spring MVC patterns or not. If this endpoint is a Spring MVC endpoint, please use requestMatchers(MvcRequestMatcher); otherwise, please use requestMatchers(AntPathRequestMatcher).
-```
-
+---
+<small>&copy; 2016-2024 <a href="https://resurface.io">Graylog, Inc.</a></small>
