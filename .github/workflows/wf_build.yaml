@@ -24,7 +24,7 @@ jobs:
       run: mvn clean install
 
     - name: copy arti into root dir 
-      run: cp target/logging-0.8.0.jar docker
+      run: cp target/logging-0.8.0.jar docker/logger.jar
 
 
     - name: check the arti
