@@ -23,12 +23,11 @@ jobs:
     - name: Build with Maven
       run: mvn clean install
 
-    - name: copy arti into root dir 
-      run: cp target/logging-0.8.0.jar docker/logger.jar
-
-
     - name: check the arti
       run: ls -la target
+
+    - name: copy arti into root dir 
+      run: cp target/maven-simple-0.2-SNAPSHOT.jar docker/logger.jar
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
