@@ -26,7 +26,6 @@ jobs:
     - name: check the arti
       run: ls -la target
 
-
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
        
