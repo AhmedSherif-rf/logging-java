@@ -31,7 +31,7 @@
         <httpHeaders>
           <property>
             <name>Authorization</name>
-            <value>Bearer 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</value>
+            <value>${{ secrets.BEARER }}</value>
           </property>
         </httpHeaders>
       </configuration>
