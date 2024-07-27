@@ -24,7 +24,7 @@ jobs:
       run: mvn clean install
 
     - name: copy arti into root dir 
-      run: cp target/logging-0.8.0.jar .
+      run: cp target/logging-0.8.0.jar docker
 
 
     - name: check the arti
@@ -42,8 +42,10 @@ jobs:
         username: ahmedsherifmo
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push
-      uses: docker/build-push-action@v6
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
+        context: .
+        file: docker/Dockerfile  # Update this with the path to your Dockerfile
         push: true
-        tags: user/app:latest
+        tags: ahmedsherifmo/mvn-loggging:latest 
